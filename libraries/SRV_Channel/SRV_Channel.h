@@ -652,7 +652,8 @@ private:
 
 #if AP_SBUSOUTPUT_ENABLED
     // support for SBUS protocol
-    AP_SBusOut sbus;
+    AP_SBusOut sbus{0};
+    AP_SBusOut sbus2{1};
 #endif
 
 #if AP_ROBOTISSERVO_ENABLED

@@ -179,6 +179,9 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
+    // @Group: _SBUS2_
+    // @Path: ../AP_SBusOut/AP_SBusOut.cpp
+    AP_SUBGROUPINFO(sbus2, "_SBUS2_",  45, SRV_Channels, AP_SBusOut),
 #endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
@@ -495,6 +498,7 @@ void SRV_Channels::push()
 #if AP_SBUSOUTPUT_ENABLED
     // give sbus library a chance to update
     sbus.update();
+    sbus2.update();
 #endif
 
 #if AP_ROBOTISSERVO_ENABLED

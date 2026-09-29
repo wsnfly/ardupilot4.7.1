@@ -16,7 +16,7 @@
 
 class AP_SBusOut {
 public:
-    AP_SBusOut();
+    AP_SBusOut(uint8_t instance = 0);
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_SBusOut);
@@ -30,13 +30,14 @@ public:
 
 private:
 
-    AP_HAL::UARTDriver *sbus1_uart;
+    AP_HAL::UARTDriver *sbus_uart;
 
     void init(void);
 
     uint16_t sbus_frame_interval;   // microseconds
 
     AP_Int16 sbus_rate;
+    uint8_t _instance;
     bool initialised;
 };
 

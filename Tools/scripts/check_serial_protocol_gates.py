@@ -71,6 +71,7 @@ class SerialProtocolGateChecker:
         'SerialProtocol_AirSpeed':     'TODO gate on AP_AIRSPEED_ENABLED',
         'SerialProtocol_AHRS':         'TODO gate on AP_EXTERNAL_AHRS_ENABLED',
         'SerialProtocol_Sbus1':        'TODO gate on AP_SBUSOUTPUT_ENABLED',
+        'SerialProtocol_Sbus2':        'TODO gate on AP_SBUSOUTPUT_ENABLED',
         'SerialProtocol_ESCTelemetry': 'TODO gate on HAVE_AP_BLHELI_SUPPORT',
         'SerialProtocol_IBUS_Telem':   'TODO gate on AP_IBUS_TELEM_ENABLED',
         'SerialProtocol_IOMCU':        'TODO gate on HAL_WITH_IO_MCU',

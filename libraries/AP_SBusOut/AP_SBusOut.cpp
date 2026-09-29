@@ -69,15 +69,18 @@ const AP_Param::GroupInfo AP_SBusOut::var_info[] = {
 
 
 // constructor
-AP_SBusOut::AP_SBusOut(void)
+AP_SBusOut::AP_SBusOut(uint8_t instance)
+    : _instance(instance),
+      initialised(false)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+
 /*
   format a SBUS output frame into a 25 byte buffer
- */
+  */
 void AP_SBusOut::sbus_format_frame(uint16_t *channels, uint8_t num_channels, uint8_t buffer[SBUS_BSIZE])
 {
     uint8_t index = 1;
@@ -118,8 +121,9 @@ void AP_SBusOut::sbus_format_frame(uint16_t *channels, uint8_t num_channels, uin
 }
 
 /*
- * build and send sbus1 frame representing first 16 servo channels
- * input arg is pointer to uart
+ * build and send sbus frame representing servo channels
+ * instance 0: channels 1-16 (SBUS1)
+ * instance 1: channels 17-32 (SBUS2)
  */
 void
 AP_SBusOut::update()
@@ -129,25 +133,24 @@ AP_SBusOut::update()
         init();
     }
 
-    if (sbus1_uart == nullptr) {
+    if (sbus_uart == nullptr) {
         return;
     }
 
     // constrain output rate using sbus_frame_interval
-    static uint32_t last_micros = 0;
+    static uint32_t last_micros[2] = {0, 0};
     uint32_t now = AP_HAL::micros();
-    if ((now - last_micros) <= sbus_frame_interval) {
+    if ((now - last_micros[_instance]) <= sbus_frame_interval) {
         return;
     }
 
-    last_micros = now;
+    last_micros[_instance] = now;
 
-    /* construct sbus frame representing channels 1 through 16 (max) */
-    uint8_t nchan = MIN(NUM_SERVO_CHANNELS, SBUS_CHANNELS);
+    uint8_t nchan = MIN(NUM_SERVO_CHANNELS - _instance * SBUS_CHANNELS, SBUS_CHANNELS);
     uint16_t channels[SBUS_CHANNELS] {};
 
     for (unsigned i = 0; i < nchan; ++i) {
-        SRV_Channel *c = SRV_Channels::srv_channel(i);
+        SRV_Channel *c = SRV_Channels::srv_channel(_instance * SBUS_CHANNELS + i);
         if (c == nullptr) {
             continue;
         }
@@ -161,7 +164,7 @@ AP_SBusOut::update()
     hal.gpio->write(55, 1);
 #endif
 
-    sbus1_uart->write(buffer, sizeof(buffer));
+    sbus_uart->write(buffer, sizeof(buffer));
 
 #if SBUS_DEBUG
     hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
@@ -173,7 +176,7 @@ void AP_SBusOut::init() {
     uint16_t rate = sbus_rate.get();
 
 #if SBUS_DEBUG
-    hal.console->printf("AP_SBusOut: init %d Hz\n", rate);
+    hal.console->printf("AP_SBusOut[%d]: init %d Hz\n", _instance, rate);
 #endif
 
     // subtract 500usec from requested frame interval to allow for latency
@@ -188,16 +191,21 @@ void AP_SBusOut::init() {
     if (!serial_manager) {
         return;
     }
-    sbus1_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_Sbus1,0);
 
-    if (sbus1_uart == nullptr) {
+    AP_SerialManager::SerialProtocol protocol = (_instance == 0) ? 
+        AP_SerialManager::SerialProtocol_Sbus1 : 
+        AP_SerialManager::SerialProtocol_Sbus2;
+
+    sbus_uart = serial_manager->find_serial(protocol, 0);
+
+    if (sbus_uart == nullptr) {
         return;
     }
 
     // update baud param in case user looks at it
-    serial_manager->set_and_default_baud(AP_SerialManager::SerialProtocol_Sbus1, 0, 100000);
+    serial_manager->set_and_default_baud(protocol, 0, 100000);
 
-    auto &uart = *sbus1_uart;
+    auto &uart = *sbus_uart;
 
     uart.begin(100000, 16, 32);
     uart.configure_parity(2);    // enable even parity
